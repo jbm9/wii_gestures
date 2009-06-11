@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <cwiid.h>
 
@@ -39,6 +40,10 @@ int main(int argc, char *argv[])
   unsigned char led_state = 0;
   unsigned char rpt_mode = 0;
   unsigned char rumble = 0;
+
+  /* Make stdout unbuffered, which is useful for piping the output of
+   * this program into a timestamping utility, such as tai64n(1) */
+  setvbuf(stdout, NULL, _IOLBF, 0);
 
   cwiid_set_err(err);
 
@@ -132,11 +137,13 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
       case CWIID_MESG_ACC:
 
 	if (button_state & 0x0004) {
-
-	  printf("Acc Report: x=%d, y=%d, z=%d\n",
+	  struct timeval now;
+	  gettimeofday(&now, NULL);
+	  printf("Acc Report: x=%d, y=%d, z=%d   %ld %ld\n",
 		 mesg[i].acc_mesg.acc[CWIID_X],
 		 mesg[i].acc_mesg.acc[CWIID_Y],
-		 mesg[i].acc_mesg.acc[CWIID_Z]);
+		 mesg[i].acc_mesg.acc[CWIID_Z],
+		 now.tv_sec, now.tv_usec);
 	}
 	break;
       case CWIID_MESG_IR:
