@@ -34,12 +34,12 @@ void err(cwiid_wiimote_t *wiimote, const char *s, va_list ap)
 int main(int argc, char *argv[]) 
 {
   cwiid_wiimote_t *wiimote;	/* wiimote handle */
-  struct cwiid_state state;	/* wiimote state */
+  //struct cwiid_state state;	/* wiimote state */
   bdaddr_t bdaddr;	/* bluetooth device address */
-  unsigned char mesg = 0;
-  unsigned char led_state = 0;
+  //unsigned char mesg = 0;
+  //unsigned char led_state = 0;
   unsigned char rpt_mode = 0;
-  unsigned char rumble = 0;
+  //unsigned char rumble = 0;
 
   /* Make stdout unbuffered, which is useful for piping the output of
    * this program into a timestamping utility, such as tai64n(1) */
@@ -105,8 +105,8 @@ int button_state;
 void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
                     union cwiid_mesg mesg[], struct timespec *timestamp)
 {
-  int i, j;
-  int valid_source;
+  int i;
+  //int valid_source;
 
   for (i=0; i < mesg_count; i++)
     {
