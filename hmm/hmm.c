@@ -1,5 +1,9 @@
 #include "hmm.h"
 
+/* forward declarations for internal functions */
+double* backwardAlgorithm(HmmStateRef hmm, StateSequenceRef sequence);
+double* forwardAlgorithm(HmmStateRef hmm, StateSequenceRef sequence);
+double  getProbability(HmmStateRef hmm, StateSequenceRef sequence);
 
 /* The dynamic arrays are row major format, so here are some convenience -------
  * wrappers for accessing the tables... ----------------------------------------
@@ -44,20 +48,8 @@ double inline getEmitP(HmmStateRef hmm, uint state, uint obs) {
 #pragma mark -
 #pragma mark allocation and destruction
 
-HmmState* createHmm(uint numStates, uint numObservations) {
+void resetHmm(HmmStateRef hmm) {
 	int i, j;
-	
-	HmmStateRef hmm = (HmmStateRef)malloc(sizeof(HmmState));
-	
-	assert(numStates > 0 && numObservations > 0);
-	
-	hmm->numStates = numStates;
-	hmm->numObservations = numObservations;
-	
-	/* malloc + 0.0 initialize everything */
-	hmm->p_initial = (double*)calloc(sizeof(double), numStates);
-	hmm->p_change  = (double*)calloc(sizeof(double), numStates * numStates);
-	hmm->p_emit    = (double*)calloc(sizeof(double), numStates * numObservations);
 	
 	/* assume we start in the first state, for now. */
 	hmm->p_initial[0] = 1.0f;
@@ -68,13 +60,13 @@ HmmState* createHmm(uint numStates, uint numObservations) {
 	for (i = 0; i < hmm->numStates; i++) {
 		for (j = 0; j < hmm->numStates; j++) {
 			
-			if (i==numStates-1 && j==numStates-1) { // last row
+			if (i==hmm->numStates-1 && j==hmm->numStates-1) { // last row
 				setChangeP(hmm, i, j, 1.0);
 				
-			} else if (i == numStates-2 && j == numStates-2) { // next to last row
+			} else if (i == hmm->numStates-2 && j == hmm->numStates-2) { // next to last row
 				setChangeP(hmm, i, j, 0.5);
 				
-			} else if (i == numStates-2 && j == numStates-1) { // next to last row
+			} else if (i == hmm->numStates-2 && j == hmm->numStates-1) { // next to last row
 				setChangeP(hmm, i, j, 0.5);
 				
 			} else if (i <= j && i > (j-jumplimit-1)) {
@@ -87,11 +79,27 @@ HmmState* createHmm(uint numStates, uint numObservations) {
 	}
 	
 	/* setup the emit probabilities */
-	for (i = 0; i < numStates; i++) {
-		for (j = 0; j < numObservations; j++) {
-			setEmitP(hmm, i, j, 1.0 / (double)numObservations);
+	for (i = 0; i < hmm->numStates; i++) {
+		for (j = 0; j < hmm->numObservations; j++) {
+			setEmitP(hmm, i, j, 1.0 / (double)hmm->numObservations);
 		}
 	}
+}
+
+HmmState* createHmm(uint numStates, uint numObservations) {	
+	assert(numStates > 0 && numObservations > 0);
+	
+	HmmStateRef hmm = (HmmStateRef)malloc(sizeof(HmmState));
+		
+	hmm->numStates = numStates;
+	hmm->numObservations = numObservations;
+	
+	/* malloc + 0.0 initialize everything */
+	hmm->p_initial = (double*)calloc(sizeof(double), numStates);
+	hmm->p_change  = (double*)calloc(sizeof(double), numStates * numStates);
+	hmm->p_emit    = (double*)calloc(sizeof(double), numStates * numObservations);
+	
+	resetHmm(hmm);
 	
 	return hmm;
 }
@@ -110,19 +118,42 @@ void releaseHmm(HmmStateRef hmm) {
 	/* light is green, trap is clean. */
 }
 
+StateSequenceRef createStateSequence(uint* states, uint length) {
+	assert(length > 0);
+	
+	uint i;
+	
+	StateSequenceRef sequence = (StateSequenceRef)malloc(sizeof(StateSequenceRef));
+	
+	sequence->length = length;
+	sequence->states = malloc(sizeof(uint) * length);
+	
+	// XXX: could memcpy if we care about speed, which we don't.
+	for (i = 0; i < length; i++) {
+		sequence->states[i] = states[i];
+	}
+	
+	return sequence;
+}
+
+void releaseStateSequence(StateSequenceRef sequence) {
+	free(sequence->states);
+	free(sequence);
+}
+
 #pragma mark -
 #pragma mark utility
 
 /* Utility funtion to dump out the state of the model */
 void dumpModel(HmmState* hmm) {
 	uint i, j;
-	
+
 	fprintf(stdout, "Initial Probabilites: [ ");
 	for (i = 0; i < hmm->numStates - 1; i++) {
 		fprintf(stdout, "%1.3f, ", hmm->p_initial[i]);
 	}
 	fprintf(stdout, "%1.3f ]\n", hmm->p_initial[hmm->numStates]);
-	
+
 	fprintf(stdout, "State Change Probabilites:\n");
 	for (i = 0; i < hmm->numStates; i++) {
 		fprintf(stdout, "%d:\t", i);
@@ -131,7 +162,7 @@ void dumpModel(HmmState* hmm) {
 		}
 		fprintf(stdout, "\n");
 	}
-	
+
 	fprintf(stdout, "Emmision Probabilites:\n");
 	for (i = 0; i < hmm->numStates; i++) {
 		fprintf(stdout, "%d:\t", i);
@@ -146,13 +177,82 @@ void dumpModel(HmmState* hmm) {
 #pragma mark "logic"
 
 /*
+ * param sequences: an array of 'num' sequences with which to train the model.
+ */
+void train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
+	assert(hmm && sequences && num > 0);
+	
+	uint i, j, k, t;
+	StateSequenceRef sequence;
+	double numer, denom;
+	double numer_inner, denom_inner;
+	double *forward, *backward;
+	double prob;
+	
+	double *change_new = (double*)malloc(sizeof(double) * hmm->numStates * hmm->numStates);
+	double *emit_new   = (double*)malloc(sizeof(double) * hmm->numStates * hmm->numObservations);
+
+	// recalculate the state change probabilities:
+	for (i = 0; i < hmm->numStates; i++) {
+		for (j = 0; j < hmm->numStates; j++) {
+			numer = denom = 0.0;
+			
+			for (k = 0; k < num; k++) {
+				resetHmm(hmm); // of this, I am suspect
+				
+				// grab the k'th sequence:
+				sequence = sequences[k];
+				
+				// run the forward and backward algorithms on this sequence
+				forward  = forwardAlgorithm(hmm, sequence);
+				backward = backwardAlgorithm(hmm, sequence);
+				prob     = getProbability(hmm, sequence);
+				
+				numer_inner = denom_inner = 0.0;
+				for (t = 0; t < sequence->length - 1; t++) {
+					
+					numer_inner += (forward[i * sequence->length + t] *
+						getChangeP(hmm, i, j) *
+						getEmitP(hmm, j, sequence->states[t+1]) *
+						backward[j * sequence->length + (t+1)]);
+								
+					denom_inner += (forward[i * sequence->length + t] *
+						backward[i * sequence->length + t]);
+				}
+				
+				numer += (1.0/prob) * numer_inner;
+				denom += (1.0/prob) * denom_inner;
+				
+				// they are my responsibility:
+				free(forward);
+				free(backward);
+			}
+			
+			change_new[i * hmm->numStates + j] = numer / denom;
+		}
+	}
+
+	// recalculate the emissions probabilites:
+
+	/* dump the old */
+	free(hmm->p_change);
+	free(hmm->p_emit);
+	
+	/* lovingly embrace the new */
+	hmm->p_change = change_new;
+	hmm->p_emit   = emit_new;
+}
+
+/*
  * Backward Algorithm.  Calling code is responsible for freeing 'results'
  *
  * Translated as directly as possible from the Wiigee Java.  No references
- * given; documentation will evolve.
+ * given; documentation will evolve as I understand this better.
  */
-double* backwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) { 	
+double* backwardAlgorithm(HmmStateRef hmm, StateSequenceRef sequence) { 	
 	int i, j, t;
+	
+	uint length = sequence->length;
 	
 	// a conceptually 2D table of numStates rows and length of sequence cols:
 	double* results = (double*)calloc(sizeof(double), hmm->numStates * length);
@@ -169,7 +269,7 @@ double* backwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
 			for (j = 0; j < hmm->numStates; j++) {
 				results[i * length + t] += results[j * length + (t+1)] *
 				                           getChangeP(hmm, i, j) *
-                                           getEmitP(hmm, j, sequence[t + 1]); 
+                                           getEmitP(hmm, j, sequence->states[t + 1]); 
 			}
 		}
 	}
@@ -186,10 +286,11 @@ double* backwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
  * length   - the length of the observation sequence
  * returns  - a 2D array of probabilities; caller will free it
  */
-double* forwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
-	assert(hmm && sequence && length > 0);
+double* forwardAlgorithm(HmmStateRef hmm, StateSequenceRef sequence) {
+	assert(hmm && sequence);
 	
 	uint i, j, k;
+	uint length = sequence->length;
 	
 	double* results = (double*)calloc(sizeof(double), hmm->numStates * length);
 	
@@ -197,7 +298,8 @@ double* forwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
 	for (i = 0; i < hmm->numStates; i++) {
 		// by advancing numStates with each iteration, we land on the first
 		// entry for each state:
-		results[i*hmm->numStates] = getInitP(hmm, i) * getEmitP(hmm, i, sequence[0]);
+		results[i*hmm->numStates] = getInitP(hmm, i) * 
+		                            getEmitP(hmm, i, sequence->states[0]);
 	}
 	
 	// over all the states in the sequence:
@@ -215,7 +317,7 @@ double* forwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
 				sum += results[(k*hmm->numStates)+(i-1)] * getChangeP(hmm, k, j);
 			}
 			
-			results[j*hmm->numStates+i] = sum * getEmitP(hmm, j, sequence[i]);
+			results[j*hmm->numStates+i] = sum * getEmitP(hmm, j, sequence->states[i]);
 		}
  	}
 	
@@ -229,12 +331,13 @@ double* forwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) {
  * sequence: a sequence of states
  * length:   the length of said sequence
  */
-double getProbability(HmmStateRef hmm, uint *sequence, uint length) {
+double getProbability(HmmStateRef hmm, StateSequenceRef sequence) {
 	uint i;
 	double prob = 0.0;
+	uint length = sequence->length;
 	
 	// call the forward algorithm, which returns a list of probs
-	double *results = forwardAlgorithm(hmm, sequence, length);
+	double *results = forwardAlgorithm(hmm, sequence);
 	
 	// NOTE: ^^ this here array is of length hmm->numStates * sequence length
 	
@@ -271,14 +374,16 @@ int main(int argc, char const* argv[]) {
 	/* test backward algorithm */
 	uint test[5] = {0, 1, 1, 0, 0};
 			
+	StateSequenceRef sequence = createStateSequence(test, 5);
+			
 	/* test backward algorithm */
-	double *results = backwardAlgorithm(hmm, test, 5);
+	double *results = backwardAlgorithm(hmm, sequence);
 	
 	fprintf(stdout, "Backward algorithm says:\n");
 	for (i = 0; i < states; i++) {
 		printf("%d: ", i);
-		for (j = 0; j < 5; j++) {
-			printf("%1.4lf   ", results[i * 5 + j]);
+		for (j = 0; j < sequence->length; j++) {
+			printf("%1.4lf   ", results[i * sequence->length + j]);
 		}
 		printf("\n");
 	}

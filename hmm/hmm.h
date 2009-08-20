@@ -8,6 +8,9 @@
 
 typedef unsigned int uint;
 
+#pragma mark -
+#pragma mark structures
+
 typedef struct _hmmState {
 		
 	/* the number of states */
@@ -28,14 +31,36 @@ typedef struct _hmmState {
 	double *p_emit;
 		
 } HmmState;
-
 typedef HmmState* HmmStateRef;
+
+typedef struct _stateSequence {
+	
+	/* the length of this sequence */
+	uint  length;
+	
+	/* the array of states in the sequence */
+	uint* states;
+	
+} StateSequence;
+typedef StateSequence* StateSequenceRef;
+
+#pragma mark -
+#pragma mark methods to allocate and destory the above structures
 
 /* Allocate a new HMM state struct for the given data sizes */
 HmmStateRef createHmm(uint numStates, uint numObservations);
 
 /* Dealloc an HMM state struct */
 void releaseHmm(HmmStateRef hmm);
+
+/* Allocate a new state sequence, initialized using the passed data.
+ * Keeps it's own internal copy. */
+StateSequenceRef createStateSequence(uint* states, uint length);
+
+void releaseStateSequence(StateSequenceRef);
+
+#pragma mark -
+#pragma mark utility methods for dealing with the model
 
 /* Utility funtion to dump out the state of the model */
 void dumpModel(HmmStateRef hmm);
