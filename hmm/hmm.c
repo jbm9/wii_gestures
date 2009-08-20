@@ -146,14 +146,36 @@ void dumpModel(HmmState* hmm) {
 #pragma mark "logic"
 
 /*
- * Backward Algorithm.
+ * Backward Algorithm.  Calling code is responsible for freeing 'results'
  *
  * Translated as directly as possible from the Wiigee Java.  No references
- * given.
+ * given; documentation will evolve.
  */
-// double* backwardAlgorithm(HmmStateRef hmm, ) { 	
-// 
-// }
+double* backwardAlgorithm(HmmStateRef hmm, uint* sequence, uint length) { 	
+	int i, j, t;
+	
+	// a conceptually 2D table of numStates rows and length of sequence cols:
+	double* results = (double*)calloc(sizeof(double), hmm->numStates * length);
+	
+	// initialize the last element for each state to 1.0:
+	for (i = 0; i < hmm->numStates; i++) {
+		results[length * i + (length - 1)] = 1.0;
+	}
+	
+	// work our way backwards:
+	for (t = length - 2; t >= 0; t--) {
+		for (i = 0; i < hmm->numStates; i++) {
+			results[i * length + t] = 0.0;
+			for (j = 0; j < hmm->numStates; j++) {
+				results[i * length + t] += results[j * length + (t+1)] *
+				                           getChangeP(hmm, i, j) *
+                                           getEmitP(hmm, j, sequence[t + 1]); 
+			}
+		}
+	}
+	
+	return results;
+}
 
 /*
  * Forward Algorithm.  Translated from the WiiGee function of the similar name.
@@ -231,6 +253,7 @@ double getProbability(HmmStateRef hmm, uint *sequence, uint length) {
 }
 
 int main(int argc, char const* argv[]) {
+	uint i, j;
 	
 	uint states = 5;
 	uint observations = 10;
@@ -245,15 +268,24 @@ int main(int argc, char const* argv[]) {
 	/* test hmm with 10 states and 10 observations */
 	HmmStateRef hmm = createHmm(states, observations);
 		
-	/* test forward algorithm */
-	uint test[5] = {0, 1, 1, 0, 0};
-	
-	double p = getProbability(hmm, test, 5);
-	fprintf(stdout, "am i retarded? %f\n", p);
-		
 	/* test backward algorithm */
+	uint test[5] = {0, 1, 1, 0, 0};
+			
+	/* test backward algorithm */
+	double *results = backwardAlgorithm(hmm, test, 5);
 	
+	fprintf(stdout, "Backward algorithm says:\n");
+	for (i = 0; i < states; i++) {
+		printf("%d: ", i);
+		for (j = 0; j < 5; j++) {
+			printf("%1.4lf   ", results[i * 5 + j]);
+		}
+		printf("\n");
+	}
 		
+	// calling code must free result:
+	free(results);
+	
 	/* examine it! */
 	dumpModel(hmm);
 	
