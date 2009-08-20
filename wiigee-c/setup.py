@@ -11,6 +11,7 @@ from distutils.core import setup, Extension
 
 quantizer_module = Extension('_quantizer',
                            sources=['quantizer_wrap.c', 'quantizer.c'],
+                           extra_compile_args=["-std=c99",],
                            )
 
 setup (name = 'hmm',
