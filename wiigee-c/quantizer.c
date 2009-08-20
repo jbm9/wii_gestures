@@ -156,7 +156,7 @@ void train(struct quantizer *this, struct gesture *gesture) {
     } while (memcmp(g, g_old, sizeof(g)) == 0);
 }
 
-int getObservationSequence(struct quantizer *this, struct gesture *gesture, int *out_length)
+int *getObservationSequence(struct quantizer *this, struct gesture *gesture, int *out_length)
 {
     int *groups = deriveGroups(this, gesture);
     int *sequence = calloc(NUM_CENTROIDS*NUM_CENTROIDS, sizeof(int));
@@ -172,8 +172,10 @@ int getObservationSequence(struct quantizer *this, struct gesture *gesture, int 
         }
     }
 
-    while (sequence_length < this->states)
-        sequence[sequence_length++] = sequence[sequence_length-1];
+    while (sequence_length < this->states) {
+        sequence[sequence_length] = sequence[sequence_length-1];
+        sequence_length++;
+    }
 
     *out_length = sequence_length;
     return sequence;
