@@ -1,11 +1,12 @@
+CC = gcc
 CFLAGS = -g -Wall -std=c99
 LDFLAGS = -lm
 
 all: quantizer
 
-quantizer: quantizer.c
+quantizer: quantizer.o main.o
 
 clean:
-	rm -f quantizer
+	rm -f quantizer *.o
 
 anyway: clean all
