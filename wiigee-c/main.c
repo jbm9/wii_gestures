@@ -5,45 +5,38 @@
 #include <string.h>
 
 #include "quantizer.h"
+#include "util.h"
 
 int main(int argc, char **argv)
 {
     struct quantizer quantizer;
     struct gesture gesture;
+    struct observation observation;
 
-    setvbuf(stdout, NULL, _IONBF, 0);
-
-    memset(&quantizer, 0, sizeof(quantizer));
+    // Initialize our quantizer object
     quantizer.states = 8;
 
-    memset(&gesture, 0, sizeof(gesture));
-    gesture.data_len = 3;
-    gesture.data = calloc(sizeof(struct coordinate), gesture.data_len);
+    // Initialize our gesture object
+    gesture.data_len = 20;
+    gesture.data = xalloc(sizeof(struct coordinate) * gesture.data_len);
     for (int i = 0; i < gesture.data_len; i++) {
         gesture.data[i].x = i+1;
         gesture.data[i].y = i+1;
         gesture.data[i].z = i+1;
     }
 
+    // Train
     trainCenteroids(&quantizer, &gesture);
 
-    struct observation observation;
-    memset(&observation, 0, sizeof(observation));
+    // Get out observation object back
     getObservationSequence(&quantizer, &gesture, &observation);
 
+    // Dump it
     for (int i = 0; i < observation.sequence_len; i++) {
         printf("%4d: %d\n", i, observation.sequence[i]);
     }
 
     free(gesture.data);
     free(observation.sequence);
-
-    //q.map[NUM_CENTROIDS][3];
-
-    //this.quantizer.trainCenteroids(sum);
-
-    // observations 14
-
-    // getObservationSequence
     return 0;
 }
