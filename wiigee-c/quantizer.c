@@ -8,17 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "util.h"
 #include "quantizer.h"
-
-void *xalloc(int size)
-{
-    void *p = malloc(size);
-    if (!p) {
-        fprintf(stderr, "malloc() of %d failed\n", size);
-        abort();
-    }
-    return p;
-}
 
 double getMaxAcc(struct coordinate *c, int data_len)
 {

@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -g -Wall -std=c99
-LDFLAGS = -lm
+CFLAGS = -g -Wall -Werror -std=c99
+LDFLAGS = $(CFLAGS) -lm
 
 all: quantizer
 
-quantizer: quantizer.o main.o
+quantizer: util.o quantizer.o main.o
 
 clean:
 	rm -f quantizer *.o
