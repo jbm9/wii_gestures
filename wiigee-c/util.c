@@ -15,3 +15,13 @@ void *xalloc(int size)
     memset(p, 0, size);
     return p;
 }
+
+void *xrealloc(void *p, int size)
+{
+    p = realloc(p, size);
+    if (!p) {
+        fprintf(stderr, "realloc() of %d failed\n", size);
+        abort();
+    }
+    return p;
+}

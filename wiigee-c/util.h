@@ -4,3 +4,4 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
 void *xalloc(int);
+void *xrealloc(void *, int);
