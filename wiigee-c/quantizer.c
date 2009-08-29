@@ -80,10 +80,10 @@ void initialize_centroids(struct quantizer *this, struct gesture *gesture)
     printf("\n");
 }
 
-int *deriveGroups(struct quantizer *this, struct gesture *g)
+int *deriveGroups(struct quantizer *this, struct gesture *gesture)
 {
-    int *groups = xalloc(NUM_CENTROIDS * MAX(g->data_len, NUM_CENTROIDS) * sizeof(int));
-    double d[NUM_CENTROIDS * g->data_len];
+    int *groups = xalloc(NUM_CENTROIDS * MAX(gesture->data_len, NUM_CENTROIDS) * sizeof(int));
+    double d[NUM_CENTROIDS * gesture->data_len];
     double curr[3];
     double vector[3];
 
@@ -95,35 +95,35 @@ int *deriveGroups(struct quantizer *this, struct gesture *g)
         ref[1] = this->map[i][1];
         ref[2] = this->map[i][2];
 
-        for (int j = 0; j < g->data_len; j++) { // splits
-            curr[0] = g->data[j].x;
-            curr[1] = g->data[j].y;
-            curr[2] = g->data[j].z;
+        for (int j = 0; j < gesture->data_len; j++) { // splits
+            curr[0] = gesture->data[j].x;
+            curr[1] = gesture->data[j].y;
+            curr[2] = gesture->data[j].z;
 
             vector[0] = ref[0] - curr[0];
             vector[1] = ref[1] - curr[1];
             vector[2] = ref[2] - curr[2];
 
-            d[i*g->data_len+j] = sqrt((vector[0] * vector[0])
+            d[i*gesture->data_len+j] = sqrt((vector[0] * vector[0])
                                     + (vector[1] * vector[1])
                                     + (vector[2] * vector[2]));
         }
     }
 
     // look, to which group a value belongs
-    for (int j = 0; j < g->data_len; j++) {
+    for (int j = 0; j < gesture->data_len; j++) {
         double smallest = DBL_MAX;
         int row = 0;
 
         for (int i = 0; i < NUM_CENTROIDS; i++) {
-            if (d[i*g->data_len+j] < smallest) {
-                smallest = d[i*g->data_len+j];
+            if (d[i*gesture->data_len+j] < smallest) {
+                smallest = d[i*gesture->data_len+j];
                 row = i;
             }
-            groups[i*g->data_len+j] = 0;
+            groups[i*gesture->data_len+j] = 0;
         }
 
-        groups[row*g->data_len+j] = 1; // guppe gesetzt ("groups set")
+        groups[row*gesture->data_len+j] = 1; // guppe gesetzt ("groups set")
     }
 
     return groups;
