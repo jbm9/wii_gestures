@@ -1,15 +1,19 @@
 CC = gcc
 CFLAGS = -g -Wall -Werror -std=c99
-LDFLAGS = $(CFLAGS) -lm
+#LDFLAGS = $(CFLAGS) -lm
+LDFLAGS = -lm
 
-all: quantizer
+all:           hmm quantizer gesturemodel
+quantizer:     util.o gesture.o quantizer.o hmm.o    quantizer_test.o
+hmm:           util.o gesture.o quantizer.o hmm.o    hmm_test.o
+gesturemodel:  util.o gesture.o quantizer.o hmm.o    gesturemodel_test.o
 
-quantizer: util.o quantizer.o main.o
+test: test_quantizer
 
-build_test:
+test_quantizer: quantizer build_quantizer_java_test $(shell ls test_data/*.dat | sed 's/\.dat/.runtest/')
+
+build_quantizer_java_test:
 	make -C javatest
-
-test: all build_test   $(shell ls test_data/*.dat | sed 's/\.dat/.runtest/')
 
 %.runtest: %.dat
 	@echo
@@ -20,8 +24,9 @@ test: all build_test   $(shell ls test_data/*.dat | sed 's/\.dat/.runtest/')
 	rm -f tmp.1 tmp.2
 	@echo
 
+
 clean: clean_test
-	rm -f quantizer *.o
+	rm -f quantizer hmm gesturemodel *.o
 
 clean_test:
 	make -C javatest clean

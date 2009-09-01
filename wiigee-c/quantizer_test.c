@@ -24,11 +24,7 @@ void read_input(struct gesture *gesture)
             exit(1);
         }
 
-        gesture->data_len++;
-        gesture->data = xrealloc(gesture->data, sizeof(struct coordinate) * gesture->data_len);
-        gesture->data[gesture->data_len-1].x = x;
-        gesture->data[gesture->data_len-1].y = y;
-        gesture->data[gesture->data_len-1].z = z;
+        gesture_append(gesture, x, y, z);
         debug("Input coordinate %f, %f, %f\n", x, y, z);
     }
 
@@ -62,31 +58,27 @@ void normalize_input(struct gesture *gesture)
 
 int main(int argc, char **argv)
 {
-    struct quantizer quantizer;
-    struct gesture gesture;
-    struct observation observation;
-
-    // Initialize our quantizer object
-    quantizer.states = 8;
+    struct quantizer *quantizer = quantizer_new(8);
+    struct gesture *gesture = gesture_new();
+    struct observation *observation = NULL;
 
     // Initialize our gesture object
-    gesture.data_len = 0;
-    gesture.data = NULL;
-    read_input(&gesture);
-    normalize_input(&gesture);
+    read_input(gesture);
+    normalize_input(gesture);
 
     // Train
-    trainCenteroids(&quantizer, &gesture);
+    trainCenteroids(quantizer, gesture);
 
     // Get out observation object back
-    getObservationSequence(&quantizer, &gesture, &observation);
+    observation = getObservationSequence(quantizer, gesture);
 
     // Dump it
-    for (int i = 0; i < observation.sequence_len; i++) {
-        printf("%d\n", observation.sequence[i]);
+    for (int i = 0; i < observation->sequence_len; i++) {
+        printf("%d\n", observation->sequence[i]);
     }
 
-    free(gesture.data);
-    free(observation.sequence);
+    quantizer_free(quantizer);
+    gesture_free(gesture);
+    observation_free(observation);
     return 0;
 }

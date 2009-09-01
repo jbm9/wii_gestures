@@ -8,8 +8,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "util.h"
 #include "quantizer.h"
+#include "util.h"
+
+struct quantizer *quantizer_new(int states)
+{
+    struct quantizer *this = xalloc(sizeof(struct quantizer));
+    this->states = states;
+    return this;
+}
+
+void quantizer_free(struct quantizer *this)
+{
+    free(this);
+}
+
+struct observation *observation_new()
+{
+    struct observation *observation = xalloc(sizeof(struct observation));
+    observation->sequence_len = 0;
+    observation->sequence = NULL;
+    return observation;
+}
+
+void observation_free(struct observation *observation)
+{
+    free(observation->sequence);
+    free(observation);
+}
 
 void initialize_centroids(struct quantizer *this, struct gesture *gesture)
 {
@@ -200,13 +226,11 @@ void trainCenteroids(struct quantizer *this, struct gesture *gesture)
     debug("trainCenteroids returning\n");
 }
 
-void getObservationSequence(struct quantizer *this, struct gesture *gesture, struct observation *observation)
+struct observation *getObservationSequence(struct quantizer *this, struct gesture *gesture)
 {
     debug("getObservationSequence starting\n");
     int *groups = deriveGroups(this, gesture);
-
-    observation->sequence_len = 0;
-    observation->sequence = NULL;
+    struct observation *observation = observation_new();
 
     debug("Visible symbol sequence:\n");
 
@@ -236,4 +260,5 @@ void getObservationSequence(struct quantizer *this, struct gesture *gesture, str
 
     debug("returning\n\n\n");
     free(groups);
+    return observation;
 }
