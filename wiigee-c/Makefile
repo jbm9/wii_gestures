@@ -4,9 +4,9 @@ CFLAGS = -g -Wall -Werror -std=c99
 LDFLAGS = -lm
 
 all:           hmm quantizer gesturemodel
-quantizer:     util.o gesture.o quantizer.o hmm.o    quantizer_test.o
-hmm:           util.o gesture.o quantizer.o hmm.o    hmm_test.o
-gesturemodel:  util.o gesture.o quantizer.o hmm.o    gesturemodel_test.o
+quantizer:     util.o observation.o gesture.o quantizer.o hmm.o    quantizer_test.o
+hmm:           util.o observation.o gesture.o quantizer.o hmm.o    hmm_test.o
+gesturemodel:  util.o observation.o gesture.o quantizer.o hmm.o    gesturemodel_test.o
 
 test: test_quantizer
 

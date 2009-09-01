@@ -17,5 +17,6 @@ typedef struct gesturemodel {
 
 struct gesturemodel *gesturemodel_new(int id);
 void gesturemodel_free(struct gesturemodel *this);
+void gesturemodel_train(struct gesturemodel *this, struct gesture *trainsequence, int trainsequence_len);
 
 #endif

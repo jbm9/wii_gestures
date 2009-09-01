@@ -23,20 +23,6 @@ void quantizer_free(struct quantizer *this)
     free(this);
 }
 
-struct observation *observation_new()
-{
-    struct observation *observation = xalloc(sizeof(struct observation));
-    observation->sequence_len = 0;
-    observation->sequence = NULL;
-    return observation;
-}
-
-void observation_free(struct observation *observation)
-{
-    free(observation->sequence);
-    free(observation);
-}
-
 void initialize_centroids(struct quantizer *this, struct gesture *gesture)
 {
     double pi = 3.14; // M_PI;
@@ -141,7 +127,7 @@ int *deriveGroups(struct quantizer *this, struct gesture *gesture)
     return memcpy(ret, groups, sizeof(groups));
 }
 
-void trainCenteroids(struct quantizer *this, struct gesture *gesture)
+void quantizer_trainCenteroids(struct quantizer *this, struct gesture *gesture)
 {
     int size   = MAP_SIZE * gesture->data_len * sizeof(int);
     int *g     = xalloc(size);
@@ -226,7 +212,7 @@ void trainCenteroids(struct quantizer *this, struct gesture *gesture)
     debug("trainCenteroids returning\n");
 }
 
-struct observation *getObservationSequence(struct quantizer *this, struct gesture *gesture)
+struct observation *quantizer_getObservationSequence(struct quantizer *this, struct gesture *gesture)
 {
     debug("getObservationSequence starting\n");
     int *groups = deriveGroups(this, gesture);
@@ -238,9 +224,7 @@ struct observation *getObservationSequence(struct quantizer *this, struct gestur
         for (int i = 0; i < MAP_SIZE; i++) { // zeilen
             if (groups[ row_col(MAP_SIZE, gesture->data_len, i, j) ] == 1) {
                 debug("%d\n", i);
-                observation->sequence_len++;
-                observation->sequence = xrealloc(observation->sequence, sizeof(int) * observation->sequence_len);
-                observation->sequence[observation->sequence_len-1] = i;
+                observation_append(observation, i);
                 break;
             } else {
                 debug("skipping groups[%d][%d] == %d)\n", i, j, groups[row_col(MAP_SIZE, gesture->data_len, i, j) ]);
@@ -248,14 +232,9 @@ struct observation *getObservationSequence(struct quantizer *this, struct gestur
         }
     }
 
-    if (observation->sequence_len < this->states)
-        debug("padding out to %d\n", this->states);
-
     while (observation->sequence_len < this->states) {
-        observation->sequence_len++;
-        observation->sequence = xrealloc(observation->sequence, sizeof(int) * observation->sequence_len);
-        observation->sequence[observation->sequence_len-1] = observation->sequence[observation->sequence_len-2];
-        debug("%d\n", observation->sequence[observation->sequence_len-1]);
+        observation_append(observation, observation->sequence[observation->sequence_len-1]);
+        debug("padding\n");
     }
 
     debug("returning\n\n\n");

@@ -6,6 +6,7 @@
 #define MAP_SIZE   14
 
 #include "gesture.h"
+#include "observation.h"
 
 typedef struct quantizer {
     double radius;
@@ -13,15 +14,9 @@ typedef struct quantizer {
     double map[MAP_SIZE][3];
 } quantizer;
 
-typedef struct observation {
-    int *sequence;
-    int sequence_len;
-} observation;
-
 struct quantizer *quantizer_new(int);
 void quantizer_free         (struct quantizer *);
-void trainCenteroids        (struct quantizer *, struct gesture *);
-struct observation *getObservationSequence (struct quantizer *, struct gesture *);
-void observation_free();
+void quantizer_trainCenteroids        (struct quantizer *, struct gesture *);
+struct observation *quantizer_getObservationSequence (struct quantizer *, struct gesture *);
 
 #endif

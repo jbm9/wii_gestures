@@ -67,10 +67,10 @@ int main(int argc, char **argv)
     normalize_input(gesture);
 
     // Train
-    trainCenteroids(quantizer, gesture);
+    quantizer_trainCenteroids(quantizer, gesture);
 
     // Get out observation object back
-    observation = getObservationSequence(quantizer, gesture);
+    observation = quantizer_getObservationSequence(quantizer, gesture);
 
     // Dump it
     for (int i = 0; i < observation->sequence_len; i++) {
