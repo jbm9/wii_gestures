@@ -1,11 +1,11 @@
 // vim:set ts=4 sw=4 ai et:
 
-#define NUM_CENTROIDS   14
+#define MAP_SIZE   14
 
 typedef struct quantizer {
     double radius;
     int states;
-    double map[NUM_CENTROIDS][3];
+    double map[MAP_SIZE][3];
 } quantizer;
 
 typedef struct coordinate {
@@ -13,9 +13,7 @@ typedef struct coordinate {
 } coordinate;
 
 typedef struct gesture {
-    double maxacc; // "The maximal acceleration this gesture has got" -- XXX not used!?
-    double minacc; // "The minimal acceleration this gesture has got" -- XXX not used!?
-
+    double minacc, maxacc;   // Min and max acceleration
     struct coordinate *data; // WiimoteAccelerationEvent
     int data_len;
 } gesture;

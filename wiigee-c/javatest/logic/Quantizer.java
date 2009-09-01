@@ -74,7 +74,7 @@ public class Quantizer {
 		Vector<double[]> data = gesture.getData();
 		double pi = Math.PI;
 		this.radius=(gesture.getMaxAcceleration()+gesture.getMinAcceleration())/2;
-		System.out.println("Using radius: "+this.radius);
+		if (debug) System.out.println("Using radius: "+this.radius);
 		
 		// x , z , y
 			if (this.map.isEmpty()) {
@@ -97,18 +97,31 @@ public class Quantizer {
 					// this.map.put(6, new double[] {0.0, 0.0, -this.radius}); // doppelt
 					this.map.put(13, new double[] {0.0, Math.cos(pi*7/4)*this.radius, Math.sin(pi*7/4)*this.radius});
 			}
-			
+
+			if (debug) {
+				System.out.printf("Initial centroids:\n");
+				for (int i = 0; i < this.map.size(); i++) {
+				    System.out.printf("   %2d:  %9.5f  %9.5f  %9.5f\n",
+					i,
+					this.map.get(i)[0],
+					this.map.get(i)[1],
+					this.map.get(i)[2]);
+				}
+				System.out.printf("\n");
+			}
 
 			int[][] g_alt = new int[this.map.size()][data.size()];
 			int[][] g = new int[this.map.size()][data.size()];
 
 			do {
 				// Derive new Groups...
+				if (debug) System.out.printf("Still in the loop\n");
 				g_alt = this.copyarray(g);
 				g = this.deriveGroups(gesture);
 
 				// calculate new centeroids
 				for (int i = 0; i < this.map.size(); i++) {
+					if (debug) System.out.printf("iter i %d\n", i);
 					double zaehlerX = 0;
 					double zaehlerY = 0;
 					double zaehlerZ = 0;
@@ -128,22 +141,54 @@ public class Quantizer {
 								(zaehlerY / (double) nenner),
 								(zaehlerZ / (double) nenner) };
 						this.map.put(i, newcenteroid);
-						if (debug) System.out.println("Centeroid: "+i+": "+newcenteroid[0]+":"+newcenteroid[1]);
+						//System.out.println("Centeroid: "+i+": "+newcenteroid[0]+":"+newcenteroid[1]);
+						if (debug) System.out.printf("Centeroid: %d: %5.1f  %5.1f  %5.1f\n",
+								i, newcenteroid[0], newcenteroid[1], newcenteroid[2]);
 					}
 				} // new centeroids
+
+				if (debug) {
+					System.out.printf("old g:\n");
+					for (int row = 0; row < this.map.size(); row++) {
+					    for (int col = 0; col < data.size(); col++) {
+						System.out.printf("%d ", g_alt[row][col]);
+					    }
+					    System.out.printf("\n");
+					}
+					System.out.printf("new g:\n");
+					for (int row = 0; row < this.map.size(); row++) {
+					    for (int col = 0; col < data.size(); col++) {
+						System.out.printf("%d ", g[row][col]);
+					    }
+					    System.out.printf("\n");
+					}
+					System.out.printf("\n");
+				}
+
 
 			} while (!equalarrays(g_alt, g));
 			
 			// Debug: Printout groups
 			
-			int n = this.states;
-			 for (int i = 0; i < n; i++) { for (int j = 0; j < data.size(); j++) { 
-				 if (debug) System.out.print(g[i][j] + "|"); 
-			     }
-			     if (debug) System.out.println(""); 
-			 }
-			
-
+			if (debug) {
+				System.out.println("Final g output:");
+				int n = this.states;
+				for (int i = 0; i < n; i++) {
+					for (int j = 0; j < data.size(); j++) { 
+						System.out.print(g[i][j] + "|"); 
+					}
+					System.out.println(""); 
+				}
+				System.out.println("Final map value:");
+				for (int i = 0; i < this.map.size(); i++) {
+				    System.out.printf("   %2d:  %5.1f  %5.1f  %5.1f\n",
+					i,
+					this.map.get(i)[0],
+					this.map.get(i)[1],
+					this.map.get(i)[2]);
+				}
+			}
+			if (debug) System.out.printf("trainCenteroids returning\n");
 	}
 
 
@@ -157,12 +202,15 @@ public class Quantizer {
 		Vector<double[]> data = gesture.data;
 		int[][] groups = new int[this.map.size()][data.size()];
 
+		if (debug) System.out.printf("\nderiveGroups\n");
+
 		// Calculate cartesian distance
 		double[][] d = new double[this.map.size()][data.size()];
 		double[] curr = new double[3];
 		double[] vector = new double[3];
 		for (int i = 0; i < this.map.size(); i++) { // zeilen
 			double[] ref = this.map.get(i);
+			if (debug) System.out.print("|");
 			for (int j = 0; j < data.size(); j++) { // spalten
 
 				curr[0] = data.elementAt(j)[0];
@@ -174,10 +222,12 @@ public class Quantizer {
 				vector[2] = ref[2] - curr[2];
 				d[i][j] = Math.sqrt((vector[0] * vector[0])
 						+ (vector[1] * vector[1]) + (vector[2] * vector[2]));
-				if (debug) System.out.print(d[i][j] + "|");
+				//System.out.print(d[i][j] + "|");
+				if (debug) System.out.printf("%5.0f |", d[i][j]);
 			}
 			if (debug) System.out.println("");
 		}
+		if (debug) System.out.println("");
 
 		// look, to which group a value belongs
 		for (int j = 0; j < data.size(); j++) {
@@ -214,17 +264,20 @@ public class Quantizer {
 	 * @param gesture Gesture to get the observationsequence to.
 	 */
 	public int[] getObservationSequence(Gesture gesture) {
+		if (debug) System.out.println("getObservationSequence starting");
 		int[][] groups = this.deriveGroups(gesture);
 		Vector<Integer> sequence = new Vector<Integer>();
 
-		if (debug) System.out.print("Visible symbol sequence: ");
+		if (debug) System.out.println("Visible symbol sequence:");
 
 		for (int j = 0; j < groups[0].length; j++) { // spalten
 			for (int i = 0; i < groups.length; i++) { // zeilen
 				if (groups[i][j] == 1) {
-					if (debug) System.out.print(" "+ i);
+					if (debug) System.out.println(i);
 					sequence.add(i);
 					break;
+				} else {
+					if (debug) System.out.printf("skipping groups[%d][%d] == %d)\n", i, j, groups[i][j]);
 				}
 			}
 		}
@@ -234,18 +287,20 @@ public class Quantizer {
 		// english: this is very dirty! it have to be here because if not
 		// too short sequences would cause an error. i've to think about a
 		// better resolution than copying the old value a few time.
+		if (sequence.size()<this.states)
+			if (debug) System.out.printf("padding out to %d\n", this.states);
+
 		while(sequence.size()<this.states) {
 			sequence.add(sequence.elementAt(sequence.size()-1));
-			if (debug) System.out.print(" "+sequence.elementAt(sequence.size()-1));
+			if (debug) System.out.println(sequence.elementAt(sequence.size()-1));
 		}
 		
-		if (debug) System.out.println("");
-
 		int[] out = new int[sequence.size()];
 		for(int i=0; i<sequence.size(); i++) {
 			out[i] = sequence.elementAt(i);
 		}
 		
+		if (debug) System.out.printf("returning\n\n\n");
 		return out;
 	}
 

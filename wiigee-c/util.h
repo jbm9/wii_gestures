@@ -5,3 +5,5 @@
 
 void *xalloc(int);
 void *xrealloc(void *, int);
+int row_col(int, int, int, int);
+int debug(const char *, ...);
