@@ -4,26 +4,37 @@
 
 #include "observation.h"
 #include "util.h"
+#include "hmm.h"
 
 struct observation *observation_new()
 {
-    struct observation *observation = xalloc(sizeof(struct observation));
-    observation->sequence_len = 0;
-    observation->sequence = NULL;
-    return observation;
+    struct observation *this = xalloc(sizeof(struct observation));
+    this->sequence_len = 0;
+    this->sequence = NULL;
+    return this;
 }
 
-void observation_append(struct observation *observation, int i)
+void observation_append(struct observation *this, int i)
 {
-    observation->sequence_len++;
-    observation->sequence = xrealloc(observation->sequence, sizeof(int) * observation->sequence_len);
-    observation->sequence[observation->sequence_len-1] = i;
+    this->sequence_len++;
+    this->sequence = xrealloc(this->sequence, sizeof(int) * this->sequence_len);
+    this->sequence[this->sequence_len-1] = i;
 }
 
-void observation_free(struct observation *observation)
+void observation_free(struct observation *this)
 {
-    free(observation->sequence);
-    free(observation);
+    free(this->sequence);
+    free(this);
 }
 
 
+// Convert a struct observation to a StateSequence, so we can interface with the hmm.c code
+StateSequence *observation_to_StateSequence(struct observation *this)
+{
+    unsigned int states[this->sequence_len];
+
+    for (int i = 0; i < this->sequence_len; i++)
+        states[i] = this->sequence[i];
+
+    return createStateSequence(states, this->sequence_len);
+}

@@ -3,6 +3,8 @@
 #ifndef _observation_h
 #define _observation_h    1
 
+#include "hmm.h"
+
 typedef struct observation {
     int *sequence;
     int sequence_len;
@@ -11,5 +13,6 @@ typedef struct observation {
 struct observation *observation_new();
 void observation_append(struct observation *, int);
 void observation_free();
+StateSequence *observation_to_StateSequence(struct observation *);
 
 #endif

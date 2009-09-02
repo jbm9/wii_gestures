@@ -11,12 +11,13 @@ typedef struct gesturemodel {
     int observations;            // The number of observations for the hmm and k-mean
     int id;                      // The id representation of this model
     struct quantizer *quantizer; // The quantization component
-    HmmState *markovmodel;       // The statistical model, hidden markov model
+    HmmState *hmm;               // The statistical model, hidden markov model
     double defaultprobability;   // The default probability of this gesturemodel, needed for the bayes classifier
 } gesturemodel;
 
 struct gesturemodel *gesturemodel_new(int id);
 void gesturemodel_free(struct gesturemodel *this);
 void gesturemodel_train(struct gesturemodel *this, struct gesture *trainsequence, int trainsequence_len);
+void setDefaultProbability(struct gesturemodel *this, struct gesture *trainsequence, int trainsequence_len);
 
 #endif

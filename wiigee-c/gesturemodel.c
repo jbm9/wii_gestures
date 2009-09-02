@@ -14,7 +14,7 @@ struct gesturemodel *gesturemodel_new(int id)
     this->states       = 8;     // n=8 states empirical value
     this->observations = 14;    // k=14 observations empirical value
     this->quantizer    = quantizer_new(this->states);
-    this->markovmodel = hmm_new(this->states, this->observations);
+    this->hmm          = hmm_new(this->states, this->observations);
 
     return this;
 }
@@ -22,7 +22,7 @@ struct gesturemodel *gesturemodel_new(int id)
 void gesturemodel_free(struct gesturemodel *this)
 {
     quantizer_free(this->quantizer);
-    hmm_free(this->markovmodel);
+    hmm_free(this->hmm);
     free(this);
 }
 
@@ -56,14 +56,42 @@ void gesturemodel_train(struct gesturemodel *this, struct gesture *trainsequence
     quantizer_trainCenteroids(this->quantizer, sum);
 
     // convert gesture vector to a sequence of discrete values
-    struct observation *seqs = observation_new();
-
+    StateSequence *seqs[trainsequence_len];
     for (int i = 0; i < trainsequence_len; i++) {
         struct observation *observation = quantizer_getObservationSequence(this->quantizer, &trainsequence[i]);
-
-        for (int j = 0; j < observation->sequence_len; j++) {
-            observation_append(seqs, observation->sequence[j]);
-        }
+        seqs[i] = observation_to_StateSequence(observation);
+        observation_free(observation);
     }
 
+    // train the markov model with this derived discrete sequences
+    hmm_train(this->hmm, seqs, trainsequence_len);
+
+    // set the default probability
+    setDefaultProbability(this, trainsequence, trainsequence_len);
+
+    gesture_free(sum);
+    for (int i = 0; i < trainsequence_len; i++)
+        releaseStateSequence(seqs[i]);
+}
+
+double matches(struct gesturemodel *this, struct gesture *gesture)
+{
+    struct observation *observation = quantizer_getObservationSequence(this->quantizer, gesture);
+    StateSequenceRef sequence = observation_to_StateSequence(observation);
+
+    double out = getProbability(this->hmm, sequence);
+
+    observation_free(observation);
+    releaseStateSequence(sequence);
+    return out;
+}
+
+void setDefaultProbability(struct gesturemodel *this, struct gesture *trainsequence, int trainsequence_len)
+{
+    double prob = 0;
+
+    for (int i = 0; i < trainsequence_len; i++)
+        prob += matches(this, &trainsequence[i]);
+
+    this->defaultprobability = prob / trainsequence_len;
 }

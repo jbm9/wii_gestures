@@ -56,6 +56,8 @@ HmmStateRef hmm_new(uint numStates, uint numObservations);
 /* Dealloc an HMM state struct */
 void hmm_free(HmmStateRef hmm);
 
+void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num);
+
 /* Allocate a new state sequence, initialized using the passed data.
  * Keeps it's own internal copy. */
 StateSequenceRef createStateSequence(uint* states, uint length);
