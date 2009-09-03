@@ -1,20 +1,19 @@
 all: lib javatest test
 
-lib/stamp:
-lib: lib/stamp
-	make -C lib
+lib:
+	$(MAKE) -C lib
 
-test/stamp:
-test: lib javatest test/stamp
-	make -C test
+javatest:
+	$(MAKE) -C javatest
 
-javatest/stamp:
-javatest: javatest/stamp
-	make -C javatest
+test: lib javatest
+	$(MAKE) -C test
 
 clean:
-	make -C lib clean
-	make -C test clean
-	make -C javatest clean
+	$(MAKE) -C lib      clean
+	$(MAKE) -C test     clean
+	$(MAKE) -C javatest clean
 
 anyway: clean all
+
+.PHONY: all lib javatest test clean anyway

@@ -1,14 +1,13 @@
-OBJS = $(patsubst %.java, %.class, $(shell find -name '*.java' -print))
+JAVA = $(patsubst %.java, %.class, $(shell find -name '*.java' -print))
 
-all:	$(OBJS) stamp
+all: $(JAVA)
 
 %.class: %.java
 	javac $<
 
-stamp:
-	touch stamp
-
 clean:
-	find -name '*.class' -o -name stamp | xargs rm -f
+	rm -f $(JAVA)
 
 anyway: clean all
+
+.PHONY: clean all anyway

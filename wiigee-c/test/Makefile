@@ -4,26 +4,27 @@ CFLAGS = -g -Wall -Werror -std=c99 -I../include
 LDFLAGS = -lm ../lib/*.o
 
 BINARIES = $(patsubst %.c,  %,     $(shell ls *.c))
+OBJS     = $(patsubst %.c,  %.o,   $(shell ls *.c))
 TESTS    = $(patsubst %.sh, %.run, $(shell ls *.sh))
 
-all: lib $(BINARIES) $(TESTS) stamp
+all:  lib $(BINARIES) $(TESTS)
 test: all 
 
 %.run: %.sh
+	@echo
+	@echo == Running test $<
 	./$<
+	@echo
 
-stamp:
-	touch stamp
+lib:
+	$(MAKE) -C ../lib
 
-lib/stamp:
-lib: lib/stamp
-	make -C ../lib
-
-javatest/stamp:
-javatest: javatest/stamp
-	make -C javatest
+javatest:
+	$(MAKE) -C javatest
 
 clean:
-	rm -f *.o stamp *_test
+	rm -f $(OBJS) $(BINARIES)
 
 anyway: clean all
+
+.PHONY: clean all anyway test lib javatest
