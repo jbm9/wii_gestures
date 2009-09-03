@@ -4,7 +4,6 @@ CFLAGS = -g -Wall -Werror -std=c99 -I../include
 LDFLAGS = -lm ../lib/*.o
 
 BINARIES = $(patsubst %.c,  %,     $(shell ls *.c))
-OBJS     = $(patsubst %.c,  %.o,   $(shell ls *.c))
 TESTS    = $(patsubst %.sh, %.run, $(shell ls *.sh))
 
 all:  lib $(BINARIES) $(TESTS)
@@ -23,7 +22,7 @@ javatest:
 	$(MAKE) -C javatest
 
 clean:
-	rm -f $(OBJS) $(BINARIES)
+	rm -f $(BINARIES)
 
 anyway: clean all
 
