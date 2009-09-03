@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <float.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "gesture.h"
 #include "util.h"

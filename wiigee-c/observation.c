@@ -1,6 +1,6 @@
 // vim:set ts=4 sw=4 ai et:
 
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "observation.h"
 #include "util.h"
