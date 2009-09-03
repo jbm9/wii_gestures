@@ -1,7 +1,5 @@
 // vim:set ts=4 sw=4 ai et:
 
-#define _GNU_SOURCE /* define this before including stdio.h so we get getline() */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,10 +11,9 @@
 
 void read_input(struct gesture *gesture)
 {
-    char *line = NULL;
-    size_t size = 0;
+    char line[1024];
 
-    while (getline(&line, &size, stdin) > 0) {
+    while (fgets(line, 1024, stdin)) {
         double x, y, z;
         int num_found = sscanf(line, "%lf %lf %lf", &x, &y, &z);
         if (num_found != 3) {
@@ -32,8 +29,6 @@ void read_input(struct gesture *gesture)
         fprintf(stderr, "Couldn't read a single coordinate?\n");
         exit(1);
     }
-
-    free(line);
 }
 
 void normalize_input(struct gesture *gesture)
