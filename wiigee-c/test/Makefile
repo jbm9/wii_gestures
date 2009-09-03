@@ -6,7 +6,7 @@ LDFLAGS = -lm ../lib/*.o
 BINARIES = $(patsubst %.c,  %,     $(shell ls *.c))
 TESTS    = $(patsubst %.sh, %.run, $(shell ls *.sh))
 
-all:  lib $(BINARIES) $(TESTS)
+all:  lib javatest $(BINARIES) $(TESTS)
 test: all 
 
 %.run: %.sh
@@ -19,7 +19,7 @@ lib:
 	$(MAKE) -C ../lib
 
 javatest:
-	$(MAKE) -C javatest
+	$(MAKE) -C ../javatest
 
 clean:
 	rm -f $(BINARIES)
