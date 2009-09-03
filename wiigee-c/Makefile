@@ -1,4 +1,4 @@
-all: lib javatest test
+all: lib
 
 lib:
 	$(MAKE) -C lib
