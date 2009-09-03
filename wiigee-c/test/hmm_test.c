@@ -42,5 +42,5 @@ int main(int argc, char const* argv[]) {
 	/* kill it! */
 	hmm_free(hmm);
 	
-	return 1;
+	return 0;
 }
