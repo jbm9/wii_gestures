@@ -158,7 +158,7 @@ void dumpModel(HmmState* hmm) {
 		fprintf(stdout, "\n");
 	}
 
-	fprintf(stdout, "Emmision Probabilites:\n");
+	fprintf(stdout, "Emission Probabilities:\n");
 	for (i = 0; i < hmm->numStates; i++) {
 		fprintf(stdout, "%d:\t", i);
 		for (j = 0; j < hmm->numObservations; j++ ) {
