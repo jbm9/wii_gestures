@@ -3,7 +3,7 @@
 import java.io.*;
 import logic.*;
 
-public class TestHarness {
+public class QuantizerTest {
 
     // Read coordinate data from stdin
     static void read_input(Gesture g) throws IOException {
