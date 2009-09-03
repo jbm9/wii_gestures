@@ -10,7 +10,7 @@ lib: lib/stamp
 	make -C lib
 
 test/stamp:
-test: test/stamp
+test: lib test/stamp
 	make -C test
 
 clean:
