@@ -1,6 +1,8 @@
 %module quantizer
 %{
-#include "quantizer.h"
+#include "../include/quantizer.h"
+#include "../include/util.h"
 %}
 
-%include quantizer.h
+%include ../include/quantizer.h
+%include ../include/util.h
