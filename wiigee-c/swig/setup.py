@@ -10,7 +10,8 @@ from distutils.core import setup, Extension
 
 
 quantizer_module = Extension('_quantizer',
-                           sources=['quantizer_wrap.c', 'quantizer.c'],
+                           include_dirs=['../include/', ],
+                           sources=['quantizer_wrap.c', '../lib/quantizer.c','../lib/util.c'],
                            extra_compile_args=["-std=c99",],
                            )
 
