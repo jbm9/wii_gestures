@@ -6,6 +6,12 @@
 
 #include <cwiid.h>
 
+#include <float.h>
+#include <math.h>
+
+#include "util.h"
+#include "quantizer.h"
+
 cwiid_mesg_callback_t cwiid_callback;
 
 #define toggle_bit(bf,b)	\
@@ -156,7 +162,7 @@ struct acc_report * downsample_acc_stream(struct acc_report *head) {
   struct acc_report *output_cursor = output_head;
 
   //long sample_period = 20000; // 1e6us/50samples = 2e4 us/sample
-  long sample_period = 100000; // 1e6us/50samples = 2e4 us/sample
+  long sample_period = 100000; // 1e6us/10samples = 1e5 us/sample
 
   long x,y,z,t; // accumulators
   x = y = z = t = 0;
@@ -213,6 +219,55 @@ struct acc_report * downsample_acc_stream(struct acc_report *head) {
   return output_head;
 }
 
+void acc_reports_to_gesture(struct acc_report *head, struct gesture *gesture) {
+  struct acc_report *a = head->next;
+  printf("reset(%p)\n", a);
+  while(a) {
+    gesture_append(gesture, a->x, a->y, a->z);
+    a = a->next;
+  }
+
+  double minacc = DBL_MAX;
+  double maxacc = DBL_MIN;
+
+  for (int i = 0; i < gesture->data_len; i++) {
+      maxacc = MAX(maxacc, fabs(gesture->data[i].x));
+      maxacc = MAX(maxacc, fabs(gesture->data[i].y));
+      maxacc = MAX(maxacc, fabs(gesture->data[i].z));
+
+      minacc = MIN(minacc, fabs(gesture->data[i].x));
+      minacc = MIN(minacc, fabs(gesture->data[i].y));
+      minacc = MIN(minacc, fabs(gesture->data[i].z));
+  }
+
+  gesture->maxacc = maxacc;
+  gesture->minacc = minacc;
+}
+
+void run_quantizer(struct acc_report *head) {
+    struct quantizer *quantizer = quantizer_new(8);
+    struct gesture *gesture = gesture_new();
+    struct observation *observation = NULL;
+
+    // Initialize our gesture object
+    acc_reports_to_gesture(head, gesture);
+
+    // Train
+    quantizer_trainCenteroids(quantizer, gesture);
+
+    // Get out observation object back
+    observation = quantizer_getObservationSequence(quantizer, gesture);
+
+    // Dump it
+    for (int i = 0; i < observation->sequence_len; i++) {
+        printf("%d\n", observation->sequence[i]);
+    }
+
+    quantizer_free(quantizer);
+    gesture_free(gesture);
+    observation_free(observation);
+}
+
 
 
 int button_state;
@@ -259,13 +314,18 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
 	printf("Button Report: %.4X\n", mesg[i].btn_mesg.buttons);
 	button_state = mesg[i].btn_mesg.buttons;
 
-  if (button_state == 0) {
+  if (button_state == 0 && accs.next) {
     dump_acc_stream(&accs);
 
     printf("\n\nDOWNSAMPLED\n");
 
     struct acc_report *ds = downsample_acc_stream(&accs);
     dump_acc_stream(ds);
+
+    printf("\n\nQUANTIZED\n");
+
+    run_quantizer(ds);
+
     reset_acc_stream(ds);
     free(ds);
 
@@ -287,9 +347,9 @@ void cwiid_callback(cwiid_wiimote_t *wiimote, int mesg_count,
     */
     acc_cursor = add_acc_report(
      acc_cursor,
-		 mesg[i].acc_mesg.acc[CWIID_X],
-		 mesg[i].acc_mesg.acc[CWIID_Y],
-		 mesg[i].acc_mesg.acc[CWIID_Z],
+		 (signed char)mesg[i].acc_mesg.acc[CWIID_X],
+		 (signed char)mesg[i].acc_mesg.acc[CWIID_Y],
+		 (signed char)mesg[i].acc_mesg.acc[CWIID_Z],
 		 now.tv_sec, now.tv_usec);
 	}
 	break;
