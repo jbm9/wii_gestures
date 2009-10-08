@@ -16,5 +16,5 @@ AC_CHECK_HEADERS([string.h strings.h], [break])
 AC_CHECK_FUNCS([strrchr])
 AC_REPLACE_FUNCS([basename])
 
-AC_CONFIG_FILES([test/Makefile lib/Makefile Makefile])
+AC_CONFIG_FILES([test/Makefile lib/Makefile src/Makefile Makefile])
 AC_OUTPUT
