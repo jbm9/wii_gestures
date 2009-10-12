@@ -52,7 +52,6 @@ src/.libs/
 src/Makefile
 src/Makefile.in
 src/hmm_grab
-src/hmm_grab.c
 src/hmm_grab.o
 src/quantizer_grab
 src/quantizer_grab.o
