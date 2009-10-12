@@ -1,6 +1,6 @@
 INCLUDES   = -I$(top_srcdir)/include
 
-CFLAGS = -std=c99
+CFLAGS = -std=c99 -g
 
 bin_PROGRAMS = gesturemodel_test hmm_test quantizer_test
 

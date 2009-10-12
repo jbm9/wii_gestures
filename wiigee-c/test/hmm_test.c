@@ -162,7 +162,9 @@ int test_round_trip() {
   printf("------------ TRAIN 0 --------------\n");
 
   seq = createStateSequence(seq_1, seq_len);
-  hmm_train(hmms[0], &seq, 1);
+  StateSequenceRef seqs[2];
+  seqs[0] = seq; seqs[1] = seq;
+  hmm_train(hmms[0], seqs, 2);
   releaseStateSequence(seq);
 
   for(int i = 0; i < n_hmms; i++) {
@@ -175,7 +177,8 @@ int test_round_trip() {
 
 
   seq = createStateSequence(seq_2, seq_len);
-  hmm_train(hmms[1], &seq, 1);
+  seqs[0] = seq; seqs[1] = seq;
+  hmm_train(hmms[1], seqs, 2);
   releaseStateSequence(seq);
 
   for(int i = 0; i < n_hmms; i++) {

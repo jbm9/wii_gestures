@@ -49,14 +49,20 @@ void resetHmm(HmmStateRef hmm) {
 	int i, j;
 
   setInitP(hmm, 0, 1.0); // must start in first state in L-R HMM
+
+  // Set up an upper-diagonal transition matrix, with each row containing an
+  // equal probability of jumping to any state to the right of the state
+  // corresponding to the current row.  See the above reference to understand
+  // this; it's pretty straightforward with a diagram.  -jbm
+
   for (i = 0; i < hmm->numStates; i++) {
-    if (i > 0) setInitP(hmm, i, 0.0);
+    if (i > 0) setInitP(hmm, i, 0.0); // L-R constraint: p_i(0) = 0.0, i!=0
 
     for (j = 0; j < i; j++)
 			setChangeP(hmm, i, j, 0.0); // L-R constraint
 
-    for (j = i; j < hmm->numStates; j++)
-			setChangeP(hmm, i, j, 1.0/(hmm->numStates-j));
+    for (j = i; j < hmm->numStates; j++) // equal opportunity
+			setChangeP(hmm, i, j, 1.0/(hmm->numStates-i));
   }
 
 	/* setup the emit probabilities */
@@ -66,42 +72,8 @@ void resetHmm(HmmStateRef hmm) {
 		}
 	}
   return;
-	
-	/* assume we start in the first state, for now. */
-	hmm->p_initial[0] = 1.0f;
-
-	/* as noted in the wiigee source code; "static" and "quick & dirty" */
-	/* FIXME: somebody should unravel this and code it more sensibly */
-
-	int jumplimit = 2;
-	for (i = 0; i < hmm->numStates; i++) {
-		for (j = 0; j < hmm->numStates; j++) {
-			
-			if (i==hmm->numStates-1 && j==hmm->numStates-1) { // last row
-				setChangeP(hmm, i, j, 1.0);
-				
-			} else if (i == hmm->numStates-2 && j == hmm->numStates-2) { // next to last row
-				setChangeP(hmm, i, j, 0.5);
-				
-			} else if (i == hmm->numStates-2 && j == hmm->numStates-1) { // next to last row
-				setChangeP(hmm, i, j, 0.5);
-				
-			} else if (i <= j && i > (j-jumplimit-1)) {
-				setChangeP(hmm, i, j, 1.0/(double)(jumplimit+1));
-				
-			} else {
-				setChangeP(hmm, i, j, 0.0);
-			}	
-		}
-	}
-	
-	/* setup the emit probabilities */
-	for (i = 0; i < hmm->numStates; i++) {
-		for (j = 0; j < hmm->numObservations; j++) {
-			setEmitP(hmm, i, j, 1.0 / (double)hmm->numObservations);
-		}
-	}
 }
+
 
 HmmState* hmm_new(uint numStates, uint numObservations) {	
 	assert(numStates > 0 && numObservations > 0);
@@ -165,6 +137,8 @@ void releaseStateSequence(StateSequenceRef sequence) {
 void dumpModel(HmmState* hmm) {
 	uint i, j;
 
+  fprintf(stdout, "nStates=%d, nObs=%d\n", hmm->numStates, hmm->numObservations);
+
 	fprintf(stdout, "Initial Probabilites: [ ");
 	for (i = 0; i < hmm->numStates - 1; i++) {
 		fprintf(stdout, "%1.3f, ", hmm->p_initial[i]);
@@ -182,7 +156,7 @@ void dumpModel(HmmState* hmm) {
 
 	fprintf(stdout, "Emission Probabilities:\n");
 	for (i = 0; i < hmm->numStates; i++) {
-		fprintf(stdout, "%d:\t", i);
+		fprintf(stdout, "state%d:\t", i);
 		for (j = 0; j < hmm->numObservations; j++ ) {
 			fprintf(stdout, "%1.3f\t", getEmitP(hmm, i,j));
 		}
@@ -209,6 +183,8 @@ void hmm_train_bw(HmmStateRef hmm, StateSequenceRef Y) {
 
 /*
  * param sequences: an array of 'num' sequences with which to train the model.
+ *
+ * Rabiner 1990 p273
  */
 void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
 	assert(hmm && sequences && num > 0);
@@ -224,64 +200,98 @@ void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
 	double *emit_new   = (double*)malloc(sizeof(double) * hmm->numStates * hmm->numObservations);
 
 	// recalculate the state change probabilities:
-  for (k = 0; k < num; k++) {
-		//resetHmm(hmm); // of this, I am suspect
-				
-  	// grab the k'th sequence:
-    sequence = sequences[k];
-				
-    // run the forward and backward algorithms on this sequence
-    forward  = forwardAlgorithm(hmm, sequence);
-    backward = backwardAlgorithm(hmm, sequence);
-    prob     = getProbability(hmm, sequence);
 
     numer = denom = 0.0;
-    int N = sequence->length;
 
     // recompute transition matrix
     for (i = 0; i < hmm->numStates; i++) {
       for (j = 0; j < hmm->numStates; j++) {
-        numer_inner = denom_inner = 0.0;
-				for (n = 0; n < N - 1; n++) {
-					
-					numer_inner += (forward[i * N + n] *
-						getChangeP(hmm, i, j) *
-						getEmitP(hmm, j, sequence->states[n+1]) *
-						backward[j * N + (n+1)]);
-								
-					denom_inner += (forward[i * N + n] *
-						backward[i * N + n]);
-				}
+        numer = denom = 0.0;
+        for (k = 0; k < num; k++) {
+          //resetHmm(hmm); // of this, I am suspect
 				
-				numer += (1.0/prob) * numer_inner;
-				denom += (1.0/prob) * denom_inner;
+          // grab the k'th sequence:
+          sequence = sequences[k];
 				
-			  change_new[i * hmm->numStates + j] = numer / denom;
-			}
-		}
+          // run the forward and backward algorithms on this sequence
+          forward  = forwardAlgorithm(hmm, sequence);
+          backward = backwardAlgorithm(hmm, sequence);
+          prob     = getProbability(hmm, sequence);
+          int N = sequence->length;
 
+          numer_inner = denom_inner = 0.0;
+          for (n = 0; n < N - 1; n++) {
+					
+            numer_inner += (forward[i * N + n] *
+                getChangeP(hmm, i, j) *
+                getEmitP(hmm, j, sequence->states[n+1]) *
+                backward[j * N + (n+1)]);
+								
+            denom_inner += (forward[i * N + n] *
+                backward[i * N + n]);
+          }
+				
+          numer += (1.0/prob) * numer_inner;
+          denom += (1.0/prob) * denom_inner;
+
+          // they are my responsibility:
+          free(forward);
+          free(backward);
+        }
+        change_new[i * hmm->numStates + j] = numer / denom;
+      }
+
+      // And scale it to unity per-origin state
+      double total = 0.0;
+      for(j = 0; j < hmm->numStates; j++)
+        total += change_new[i * hmm->numStates + j];
+      for(j = 0; j < hmm->numStates; j++)
+        change_new[i * hmm->numStates + j] /= total;
+
+    }
 
     // recompute emission matrix
     numer_inner = denom_inner = 0.0;
     numer = denom = 0.0;
-    for (j = 0; j < hmm->numStates; j++) {
-      for (k = 0; i < hmm->numObservations; k++) {
+    for (int l = 0; l < hmm->numObservations; l++) {
+      for (j = 0; j < hmm->numStates; j++) {
+        numer = denom = 0.0;
+        for (k = 0; k < hmm->numObservations; k++) {
+          forward  = forwardAlgorithm(hmm, sequence);
+          backward = backwardAlgorithm(hmm, sequence);
+          prob     = getProbability(hmm, sequence);
 
-        numer_inner = denom_inner = 0.0;
+          int N = sequence->length;
 
-        for (n = 0; n < N; n++) {
-          numer_inner += 1.0 * forward[j * N + n] * backward[j * N + n];
-          denom_inner += forward[j * N + n] * backward[j * N + n];
+          numer_inner = denom_inner = 0.0;
+
+          for (n = 0; n < N; n++) {
+            denom_inner += forward[j * N + n] * backward[j * N + n];
+            if (sequence->states[n] == l)
+              numer_inner += forward[j * N + n] * backward[j * N + n];
+          }
+
+        printf("   emit: j=%d -> l=%d, k=%d = %f/%f\n", j, l, k, numer_inner, denom_inner);
+          numer += (1.0/prob) * numer_inner;
+          denom += (1.0/prob) * denom_inner;
+
+          // they are my responsibility:
+          free(forward);
+          free(backward);
         }
-        emit_new[hmm->numObservations*j + k] = numer_inner/denom_inner;
+        printf("   emit: j=%d -> l=%d = %f/%f\n", j, l, numer, denom);
+        emit_new[hmm->numObservations*j + l] = numer / denom;
       }
     }
 
-    // they are my responsibility:
-    free(forward);
-    free(backward);
-	}
+    for(j = 0; j < hmm->numStates; j++) {
+      double total = 0.0;
+      for (int l = 0; l < hmm->numObservations; l++)
+        total += emit_new[hmm->numObservations*j + l];
 
+      for (int l = 0; l < hmm->numObservations; l++)
+        emit_new[hmm->numObservations*j + l] /= total;
+    }
 
   printf("\nBEFORE TRAIN\n");
   dumpModel(hmm);
