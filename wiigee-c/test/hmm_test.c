@@ -69,8 +69,68 @@ void test_Moss_Q520() {
   double prob = getProbability(hmm, seq);
   double expected_prob = 0.05544;
 
+
   if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
     printf("ERROR: (P) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+
+  double gamma = 0.0;
+  double expected_gamma = 0.0;
+
+  expected_gamma = 0.28271;
+  gamma = hmm_gamma(hmm, seq, 1, 0, 0);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (g) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+  expected_gamma = 0.53383;
+  gamma = hmm_gamma(hmm, seq, 1, 0, 1);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (g) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+
+  expected_gamma = 0.04584;
+  gamma = hmm_gamma(hmm, seq, 3, 0, 0);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (g) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+
+  expected_gamma = 0.75365;
+  gamma = hmm_gamma(hmm, seq, 3, 1, 1);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (g) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+
+
+  double expected_delta = 0.0;
+  double delta =  0.0;
+
+  expected_delta = 0.81654;
+  delta = hmm_delta(hmm, seq, 1, 0);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (d) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+  expected_delta = 0.11273;
+  delta = hmm_delta(hmm, seq, 4, 0);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (d) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+  expected_delta = 0.18366;
+  delta = hmm_delta(hmm, seq, 1, 1);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (d) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
+  expected_delta = 0.88727;
+  delta = hmm_delta(hmm, seq, 4, 1);
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (d) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
   }
 
 }

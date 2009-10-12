@@ -408,3 +408,35 @@ double getProbability(HmmStateRef hmm, StateSequenceRef sequence) {
 	
 	return prob;
 }
+
+double hmm_gamma(HmmStateRef hmm, StateSequenceRef Y, int j, int state1, int state2) {
+  double *alpha = forwardAlgorithm(hmm, Y);
+  double *beta = backwardAlgorithm(hmm, Y);
+  double P_Y = getProbability(hmm, Y);
+
+  int T = Y->length;
+
+  // gamma(Y,j,s,t) = alpha(Y,j,s)*go(s,t)*out(t, A_(j+1))*beta(Y,j+1,t) / P(Y)
+  // gamma(Y,j,s,t) = alpha(Y,j,i)*a(i,j)*b(j, Y[+1])*beta(y,j+1,t) / P(Y)
+
+  double gamma = alpha[state1*T+j] * getChangeP(hmm, state1, state2) * getEmitP(hmm, state2, Y->states[j]) * beta[state2*T+j] / P_Y;
+
+  free(beta);
+  free(alpha);
+
+  return gamma;
+}
+
+double hmm_delta(HmmStateRef hmm, StateSequenceRef Y, int j, int s) {
+  // This is the probability of an analyzed word in A(y) that the jth state is s.
+
+  double sum = 0.0;
+
+  for(int u = 0; u < hmm->numStates; u++) {
+    sum += hmm_gamma(hmm, Y, j, s, u);
+  }
+
+  return sum;
+}
+
+
