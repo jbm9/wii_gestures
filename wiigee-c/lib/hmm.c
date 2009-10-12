@@ -190,6 +190,20 @@ void dumpModel(HmmState* hmm) {
 //#pragma mark -
 //#pragma mark "logic"
 
+void hmm_train_bw(HmmStateRef hmm, StateSequenceRef Y) {
+  int T = Y->length;
+
+  double *alpha = forwardAlgorithm(hmm, Y);
+  double *beta = backwardAlgorithm(hmm, Y);
+
+  double P_Y = getProbability(hmm, Y);
+
+  double *pi_star = (double*)malloc(sizeof(double) * hmm->numStates);
+  for(int j = 0; j < hmm->numStates; j++) {
+    pi_star[j] = (alpha[j*T] * beta[j*T])/P_Y;
+  }
+}
+
 /*
  * param sequences: an array of 'num' sequences with which to train the model.
  */
@@ -342,7 +356,7 @@ double* forwardAlgorithm(HmmStateRef hmm, StateSequenceRef sequence) {
 		                            getEmitP(hmm, i, sequence->states[0]);
 	}
 	
-	// over all the states in the sequence:
+	// over all the symbols in the sequence:
 	for (i = 1; i < length; i++) {
 		
 		// over all the states in the model:
@@ -386,7 +400,7 @@ double getProbability(HmmStateRef hmm, StateSequenceRef sequence) {
 		
 		// we care about what's in the last entry of the table for each
 		// state:
-		prob += results[i*hmm->numStates + (length-1)];
+		prob += results[i*sequence->length + (length-1)];
 	}
 	
 	/* clean up after "forward" */

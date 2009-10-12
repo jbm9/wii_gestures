@@ -34,9 +34,9 @@ void test_Moss_Q520() {
 0.04919 };
 
   for(int i = 0; i < 2*4; i++) {
-    printf(" %f, ", f[i]);
+    // printf(" %f, ", f[i]);
     if ( fabs( (expected[i]-f[i]) / expected[i] ) > 0.05 ) {
-      printf("ERROR: More than 5%% relative error at offset %d (expected=%f, got=%f)\n", i, expected[i], f[i]);
+      printf("ERROR: (alpha) More than 5%% relative error at offset %d (expected=%f, got=%f)\n", i, expected[i], f[i]);
     }
   }
   printf("\n");
@@ -58,13 +58,21 @@ void test_Moss_Q520() {
   };
 
   for(int i = 0; i < 2*4; i++) {
-    printf(" %f, ", b[i]);
+    // printf(" %f, ", b[i]);
     if ( fabs( (expected_backwards[i]-b[i]) / expected_backwards[i] ) > 0.05 ) {
-      printf("ERROR: More than 5%% relative error at offset %d (expected=%f, got=%f)\n", i, expected_backwards[i], b[i]);
+      printf("ERROR: (beta) More than 5%% relative error at offset %d (expected=%f, got=%f)\n", i, expected_backwards[i], b[i]);
     }
   }
   printf("\n");
   free(b);
+
+  double prob = getProbability(hmm, seq);
+  double expected_prob = 0.05544;
+
+  if ( fabs( (expected_prob-prob) / expected_prob ) > 0.05 ) {
+    printf("ERROR: (P) More than 5%% relative error (expected=%f, got=%f)\n", expected_prob, prob);
+  }
+
 }
 
 int test_round_trip() {
