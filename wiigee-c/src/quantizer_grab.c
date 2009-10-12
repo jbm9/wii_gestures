@@ -1,3 +1,16 @@
+/*
+ * A demo app which does a kludgy job of capturing input, then tying it into
+ * the quantizer to let you quantize live wiimote gestures.
+ *
+ * Only works on cwiid platforms, which is a bit of a shame.
+ *
+ * Usage: just run the binary, then hold down trigger to capture, release to
+ * analyze.  Prints to stdout.
+ *
+ * I mentioned kludgy, right?  Good.
+ *
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

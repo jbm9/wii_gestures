@@ -12,7 +12,7 @@ typedef struct observation {
 
 struct observation *observation_new();
 void observation_append(struct observation *, int);
-void observation_free();
+void observation_free(struct observation *);
 StateSequence *observation_to_StateSequence(struct observation *);
 
 #endif
