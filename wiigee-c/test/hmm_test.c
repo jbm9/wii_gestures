@@ -23,8 +23,15 @@ void test_Moss_Q520() {
   double *f = forwardAlgorithm(hmm, seq);
 
   double expected[] = { 
-    0.34, 0.066, 0.02118, 0.00625,
-    0.075, 0.155, 0.09285, 0.04919 };
+    0.34, 
+    0.066,
+0.02118,
+0.00625,
+
+0.075,
+0.155,
+0.09285,
+0.04919 };
 
   for(int i = 0; i < 2*4; i++) {
     printf(" %f, ", f[i]);
@@ -35,6 +42,29 @@ void test_Moss_Q520() {
   printf("\n");
   free(f);
 
+
+  double *b = backwardAlgorithm(hmm, seq);
+
+  double expected_backwards[] = {
+    0.13315,
+    0.2561,
+    0.47,
+    1.0,
+
+    0.12729,
+    0.2487,
+    0.49,
+    1.0,
+  };
+
+  for(int i = 0; i < 2*4; i++) {
+    printf(" %f, ", b[i]);
+    if ( fabs( (expected_backwards[i]-b[i]) / expected_backwards[i] ) > 0.05 ) {
+      printf("ERROR: More than 5%% relative error at offset %d (expected=%f, got=%f)\n", i, expected_backwards[i], b[i]);
+    }
+  }
+  printf("\n");
+  free(b);
 }
 
 int test_round_trip() {
@@ -116,7 +146,6 @@ int test_round_trip() {
 
 int main(int argc, char const* argv[]) {
   test_Moss_Q520();
-  return 0;
   test_round_trip();
   return 0;
 
