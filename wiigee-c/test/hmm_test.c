@@ -164,7 +164,7 @@ int test_round_trip() {
   seq = createStateSequence(seq_1, seq_len);
   StateSequenceRef seqs[2];
   seqs[0] = seq; seqs[1] = seq;
-  hmm_train(hmms[0], seqs, 2);
+  hmm_train(hmms[0], seqs, 1);
   releaseStateSequence(seq);
 
   for(int i = 0; i < n_hmms; i++) {

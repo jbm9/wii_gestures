@@ -241,12 +241,14 @@ void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
         change_new[i * hmm->numStates + j] = numer / denom;
       }
 
+#if 0
       // And scale it to unity per-origin state
       double total = 0.0;
       for(j = 0; j < hmm->numStates; j++)
         total += change_new[i * hmm->numStates + j];
       for(j = 0; j < hmm->numStates; j++)
         change_new[i * hmm->numStates + j] /= total;
+#endif
 
     }
 
@@ -284,6 +286,7 @@ void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
       }
     }
 
+#if 0
     for(j = 0; j < hmm->numStates; j++) {
       double total = 0.0;
       for (int l = 0; l < hmm->numObservations; l++)
@@ -292,6 +295,7 @@ void hmm_train(HmmStateRef hmm, StateSequenceRef* sequences, uint num) {
       for (int l = 0; l < hmm->numObservations; l++)
         emit_new[hmm->numObservations*j + l] /= total;
     }
+#endif
 
   printf("\nBEFORE TRAIN\n");
   dumpModel(hmm);
@@ -409,7 +413,7 @@ double getProbability(HmmStateRef hmm, StateSequenceRef sequence) {
 	// NOTE: ^^ this here array is of length hmm->numStates * sequence length
 	
 	// add up the returned probabilities:
-	for (i = 0; i < hmm->numStates * length; i++) {
+	for (i = 0; i < hmm->numStates; i++) {
 		
 		// we care about what's in the last entry of the table for each
 		// state:
