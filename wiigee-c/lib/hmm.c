@@ -43,17 +43,20 @@ double inline getEmitP(HmmStateRef hmm, uint state, uint obs) {
 //#pragma mark -
 //#pragma mark allocation and destruction
 
+/* This initializes our HMM to be a L-R HMM.  See Rabiner 1990 p266.
+*/
 void resetHmm(HmmStateRef hmm) {
 	int i, j;
-
-  double uniform_p = 1.0/hmm->numStates;
 
   setInitP(hmm, 0, 1.0); // must start in first state in L-R HMM
   for (i = 0; i < hmm->numStates; i++) {
     if (i > 0) setInitP(hmm, i, 0.0);
 
-    for (j = 0; j < hmm->numStates; j++)
-			setChangeP(hmm, i, j, uniform_p);
+    for (j = 0; j < i; j++)
+			setChangeP(hmm, i, j, 0.0); // L-R constraint
+
+    for (j = i; j < hmm->numStates; j++)
+			setChangeP(hmm, i, j, 1.0/(hmm->numStates-j));
   }
 
 	/* setup the emit probabilities */
